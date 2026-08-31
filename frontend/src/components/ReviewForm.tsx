@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { DocumentRecord, ExtractedInvoice, LineItem } from "@/lib/types";
 import { updateDocument } from "@/lib/api";
 import { ConfidenceBadge } from "./ConfidenceBadge";
@@ -91,19 +92,18 @@ function parseOptionalNumber(raw: string): number | null {
 }
 
 export function ReviewForm({ document: initial }: { document: DocumentRecord }) {
+  const router = useRouter();
   const [doc, setDoc] = useState(initial);
   const [form, setForm] = useState<ExtractedInvoice>(() =>
     normalizeExtracted(initial.extracted),
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
 
   const warnings = doc.validation.field_warnings;
 
   const setField = <K extends keyof ExtractedInvoice>(key: K, value: ExtractedInvoice[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
-    setSaved(false);
   };
 
   const updateLine = (index: number, patch: Partial<LineItem>) => {
@@ -112,7 +112,6 @@ export function ReviewForm({ document: initial }: { document: DocumentRecord }) 
       next[index] = { ...next[index], ...patch };
       return { ...prev, line_items: next };
     });
-    setSaved(false);
   };
 
   const issueSummary = useMemo(
@@ -127,7 +126,7 @@ export function ReviewForm({ document: initial }: { document: DocumentRecord }) 
       const updated = await updateDocument(doc.id, { ...form, confirm: true });
       setDoc(updated);
       setForm(normalizeExtracted(updated.extracted));
-      setSaved(true);
+      router.push("/history");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save");
     } finally {
@@ -137,7 +136,7 @@ export function ReviewForm({ document: initial }: { document: DocumentRecord }) 
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="mb-3 flex flex-wrap items-start justify-between gap-2 border-b border-stone-200 pb-2">
+      <div className="mb-3 shrink-0 flex flex-wrap items-start justify-between gap-2 border-b border-stone-200 pb-2">
         <div className="min-w-0">
           <h2 className="text-base font-semibold text-stone-900">Extracted data</h2>
           <p className="truncate text-xs text-stone-500">{doc.filename}</p>
@@ -146,7 +145,7 @@ export function ReviewForm({ document: initial }: { document: DocumentRecord }) 
       </div>
 
       {issueSummary.length > 0 && (
-        <div className="mb-3 max-h-20 overflow-y-auto rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5">
+        <div className="mb-3 shrink-0 max-h-20 overflow-y-auto rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-900">
             Validation flags
           </p>
@@ -158,8 +157,8 @@ export function ReviewForm({ document: initial }: { document: DocumentRecord }) 
         </div>
       )}
 
-      <div className="min-h-0 flex-1 space-y-3 overflow-hidden">
-        {/* Scalar fields — responsive grid, no page scroll for typical invoices */}
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+        {/* Scalar fields */}
         <div className="grid grid-cols-2 gap-x-3 gap-y-2 lg:grid-cols-3">
           <FieldShell label="Vendor" warnings={warnings.vendor_name} className="col-span-2 lg:col-span-2">
             <input
@@ -314,8 +313,8 @@ export function ReviewForm({ document: initial }: { document: DocumentRecord }) 
           </div>
         )}
 
-        {/* Line items — internal scroll only */}
-        <div className="flex min-h-0 flex-1 flex-col">
+        {/* Line items */}
+        <div>
           <div className="mb-1.5 flex items-center justify-between">
             <span className="text-[10px] font-medium uppercase tracking-wide text-stone-500">
               Line items
@@ -338,7 +337,7 @@ export function ReviewForm({ document: initial }: { document: DocumentRecord }) 
               {msg}
             </p>
           ))}
-          <div className="min-h-0 max-h-[220px] flex-1 space-y-2 overflow-y-auto pr-1">
+          <div className="space-y-2">
             {form.line_items.map((item, idx) => (
               <div
                 key={idx}
@@ -412,7 +411,7 @@ export function ReviewForm({ document: initial }: { document: DocumentRecord }) 
         </div>
       </div>
 
-      <div className="mt-3 border-t border-stone-200 pt-3">
+      <div className="mt-3 shrink-0 border-t border-stone-200 pt-3">
         {error && (
           <div
             role="alert"
@@ -427,9 +426,6 @@ export function ReviewForm({ document: initial }: { document: DocumentRecord }) 
               Dismiss
             </button>
           </div>
-        )}
-        {saved && (
-          <p className="mb-2 text-xs text-emerald-700">Saved and confirmed.</p>
         )}
         <button
           type="button"

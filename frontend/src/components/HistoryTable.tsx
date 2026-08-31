@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { DocumentSummary } from "@/lib/types";
 import { ConfidenceBadge } from "./ConfidenceBadge";
 
@@ -13,6 +13,50 @@ function formatMoney(total: number | null, currency: string | null) {
 function formatDate(value: string | null) {
   if (!value) return "—";
   return value;
+}
+
+function formatStatus(status: DocumentSummary["status"]) {
+  if (status === "confirmed") return "Confirmed";
+  if (status === "failed") return "Failed";
+  return "Extracted";
+}
+
+function HistoryRow({ doc }: { doc: DocumentSummary }) {
+  const router = useRouter();
+  const href = `/documents/${doc.id}`;
+
+  return (
+    <tr
+      role="link"
+      tabIndex={0}
+      onClick={() => router.push(href)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          router.push(href);
+        }
+      }}
+      className="cursor-pointer transition hover:bg-stone-50 focus-visible:bg-stone-50 focus-visible:outline-none"
+    >
+      <td className="px-4 py-3 font-medium text-stone-900">
+        {doc.vendor_name || doc.filename}
+      </td>
+      <td className="px-4 py-3 text-stone-600">{formatDate(doc.document_date)}</td>
+      <td className="px-4 py-3 text-stone-600">
+        {formatMoney(doc.total, doc.currency)}
+      </td>
+      <td className="px-4 py-3">
+        <ConfidenceBadge status={doc.confidence_status} />
+      </td>
+      <td className="px-4 py-3 text-stone-600">{formatStatus(doc.status)}</td>
+      <td className="px-4 py-3 text-stone-500">
+        {new Date(doc.created_at).toLocaleString()}
+      </td>
+      <td className="px-4 py-3 text-right text-sm font-medium text-stone-700">
+        View →
+      </td>
+    </tr>
+  );
 }
 
 export function HistoryTable({ documents }: { documents: DocumentSummary[] }) {
@@ -33,34 +77,13 @@ export function HistoryTable({ documents }: { documents: DocumentSummary[] }) {
             <th className="px-4 py-3 font-medium">Date</th>
             <th className="px-4 py-3 font-medium">Total</th>
             <th className="px-4 py-3 font-medium">Confidence</th>
+            <th className="px-4 py-3 font-medium">Status</th>
             <th className="px-4 py-3 font-medium">Processed</th>
+            <th className="px-4 py-3 font-medium text-right">Detail</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-stone-100 bg-white">
-          {documents.map((doc) => (
-            <tr key={doc.id} className="transition hover:bg-stone-50">
-              <td className="px-4 py-3">
-                <Link
-                  href={`/documents/${doc.id}`}
-                  className="font-medium text-stone-900 underline-offset-2 hover:underline"
-                >
-                  {doc.vendor_name || doc.filename}
-                </Link>
-              </td>
-              <td className="px-4 py-3 text-stone-600">
-                {formatDate(doc.document_date)}
-              </td>
-              <td className="px-4 py-3 text-stone-600">
-                {formatMoney(doc.total, doc.currency)}
-              </td>
-              <td className="px-4 py-3">
-                <ConfidenceBadge status={doc.confidence_status} />
-              </td>
-              <td className="px-4 py-3 text-stone-500">
-                {new Date(doc.created_at).toLocaleString()}
-              </td>
-            </tr>
-          ))}
+          {documents.map((doc) => <HistoryRow key={doc.id} doc={doc} />)}
         </tbody>
       </table>
     </div>

@@ -1,15 +1,17 @@
 import type { DocumentRecord, DocumentSummary, DocumentUpdate } from "./types";
 
-/** Server-side: talk to FastAPI directly. Browser: same-origin via Next rewrites. */
+function stripSlash(url: string): string {
+  return url.replace(/\/$/, "");
+}
+
+/** Browser + SSR: FastAPI origin. Empty in the browser = same-origin Next rewrites. */
 function apiBase(): string {
+  const fromEnv =
+    process.env.BACKEND_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "";
   if (typeof window === "undefined") {
-    return (
-      process.env.BACKEND_URL ??
-      process.env.NEXT_PUBLIC_API_URL ??
-      "http://localhost:8000"
-    );
+    return stripSlash(fromEnv || "http://localhost:8000");
   }
-  return "";
+  return fromEnv ? stripSlash(fromEnv) : "";
 }
 
 export type ApiErrorBody = {

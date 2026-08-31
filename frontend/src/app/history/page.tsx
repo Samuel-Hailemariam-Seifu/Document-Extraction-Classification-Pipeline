@@ -2,6 +2,7 @@ import { HistoryTable } from "@/components/HistoryTable";
 import { listDocuments } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export default async function HistoryPage() {
   let documents: Awaited<ReturnType<typeof listDocuments>> = [];

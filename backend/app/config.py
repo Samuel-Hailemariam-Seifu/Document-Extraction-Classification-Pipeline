@@ -22,6 +22,8 @@ class Settings(BaseSettings):
         "http://localhost:3000,http://localhost:3001,"
         "http://172.17.19.162:3000,http://172.17.19.162:3001"
     )
+    # Vercel production + preview URLs (https://*.vercel.app)
+    cors_origin_regex: str = r"https://.*\.vercel\.app"
 
     upload_dir: str = "uploads"
 
